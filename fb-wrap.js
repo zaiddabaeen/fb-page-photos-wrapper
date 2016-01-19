@@ -15,31 +15,34 @@ var fbwrap = {
     userID: null,
     user: null,
     pages: null,
-    __pages: {next: null, prev: null, more: true}, // Holds pages related information for SDK use
+    __pages: {next: null, prev: null, more: true}, // Holds pages related information for wrapper use
     photos_limit: 25,
     initialize: function () {
         FB.init({
             appId: '370557326444175',
             xfbml: true,
+            cookie: true,
             version: 'v2.5'
         });
     },
     isConnected: function (callback) {
         FB.getLoginStatus(function (response) {
+            fbwrap.log(response, 'info');
             if (response.status === 'connected') {
-                fbwrap.log(response, 'info');
                 fbwrap.log("Logged in");
                 fbwrap.isLoggedIn = true;
+
+                if (callback)
+                    callback();
                 return true;
             } else {
-                fbwrap.log(response, 'error');
                 fbwrap.log("Not logged in");
                 fbwrap.isLoggedIn = false;
+
+                if (callback)
+                    callback();
                 return false;
             }
-
-            if (callback)
-                callback();
         });
     },
     login: function (callback) {
@@ -55,7 +58,7 @@ var fbwrap = {
 
             if (callback)
                 callback();
-        }, {scope: 'manage_pages, public_profile'});
+        }, {scope: 'manage_pages, public_profile', auth_type: 'rerequest'});
     },
     logout: function (callback) {
         fbwrap.log("Logged out");
@@ -80,10 +83,10 @@ var fbwrap = {
     },
     getPages: function (callback, cursor) {
         var query = 'me/accounts?fields=likes,name,talking_about_count,picture,photos,albums,access_token&limit=25'
-        
-        if(cursor)
+
+        if (cursor)
             query += "&after=" + cursor;
-            
+
         return FB.api(
                 query,
                 'GET',
@@ -129,6 +132,11 @@ var fbwrap = {
                 if (fbwrap.debug)
                     console.log(data);
         }
+    },
+    inspect: function () {
+        if (fbwrap.debug)
+            return console.info(fbwrap);
+
     },
     Page: function (obj) {
 
