@@ -4,28 +4,30 @@
  Author: Zaid Daba'een
  
  Basic usage:
-
-        window.fbAsyncInit = function () {
-            fbapi.initialize();
-            fbapi.isConnected();
-            fbapi.login();
-        }
+ 
+ window.fbAsyncInit = function () {
+ fbapi.initialize();
+ fbapi.isConnected();
+ fbapi.login(function() {
+ alert(fbapi.user.name);
+ })           
+ }
  
  Maximum usage:
-
-        window.fbAsyncInit = function () {
-            fbapi.initialize();
-            fbapi.isConnected();
-            fbapi.login(function () {
-                fbapi.getPages(function () {
-                    fbapi.setPhotosLimit(50)
-                    fbapi.pages[0].albums[0].getPhotos(function (){
-                        fbapi.pages[0].albums[0].getNextPhotos()
-                    })
-                })
-            });
-        }
-
+ 
+ window.fbAsyncInit = function () {
+ fbapi.initialize();
+ fbapi.isConnected();
+ fbapi.login(function () {
+ fbapi.getPages(function () {
+ fbapi.setPhotosLimit(50)
+ fbapi.pages[0].albums[0].getPhotos(function (){
+ fbapi.pages[0].albums[0].getNextPhotos()
+ })
+ })
+ });
+ }
+ 
  Change debug variable to disable debug and info logging.
  FBapi imports Facebook SDK, do not import it again.
  */
@@ -61,13 +63,13 @@ var fbapi = {
     isConnected: function (callback) {
         FB.getLoginStatus(function (response) {
             if (response.status === 'connected') {
-                log(response, 'info');
-                log("Logged in");
+                fbapi.log(response, 'info');
+                fbapi.log("Logged in");
                 fbapi.isLoggedIn = true;
                 return true;
             } else {
-                log(response, 'error');
-                log("Not logged in");
+                fbapi.log(response, 'error');
+                fbapi.log("Not logged in");
                 fbapi.isLoggedIn = false;
                 return false;
             }
@@ -79,32 +81,45 @@ var fbapi = {
     login: function (callback) {
         FB.login(function (response) {
             if (response.status === 'connected') {
-                log(response, 'info');
-                log("Logged in successfully");
+                fbapi.log(response, 'info');
+                fbapi.log("Logged in successfully");
                 fbapi.userID = response.authResponse.userID;
                 fbapi.isLoggedIn = true;
             } else {
-                log(response, 'error');
+                fbapi.log(response, 'error');
             }
 
             if (callback)
                 callback();
-        }, {scope: 'publish_actions, manage_pages, publish_pages'});
+        }, {scope: 'manage_pages, public_profile'});
     },
     logout: function (callback) {
-        log("Logged out");
+        fbapi.log("Logged out");
         fbapi.isLoggedIn = false;
         FB.logout();
 
         if (callback)
             callback();
     },
+    getUser: function (callback) {
+        return FB.api(
+                'me?fields=picture,name',
+                'GET',
+                function (response) {
+                    fbapi.log(response, 'info');
+                    fbapi.user = new User(response);
+
+                    if (callback)
+                        callback();
+                }
+        );
+    },
     getPages: function (callback) {
         return FB.api(
                 'me/accounts?fields=likes,name,talking_about_count,picture,photos,albums,access_token',
                 'GET',
                 function (response) {
-                    log(response, 'info');
+                    fbapi.log(response, 'info');
                     fbapi.pages = [];
 
                     for (var key in response.data) {
@@ -120,6 +135,21 @@ var fbapi = {
     },
     setPhotosLimit: function (limit) {
         fbapi.photos_limit = limit
+    },
+    log: function (data, type) {
+        switch (type) {
+            case 'error':
+                console.error(data);
+                break;
+            case 'info':
+                if (debug)
+                    console.info(data)
+                break;
+            case 'debug':
+            default:
+                if (debug)
+                    console.log(data);
+        }
     }
 }
 
@@ -171,10 +201,12 @@ Album.prototype.getPhotos = function (callback, cursor) {
                     self.photos.push(new Photo(response.data[key]));
                 }
 
-                self.next_photos = response.paging.cursors.after
-                self.previous_photos = response.paging.cursors.before
+                if (response.paging) {
+                    self.next_photos = response.paging.cursors.after
+                    self.previous_photos = response.paging.cursors.before
+                }
 
-                log(response, 'info')
+                fbapi.log(response, 'info')
 
                 if (callback)
                     callback()
@@ -182,34 +214,27 @@ Album.prototype.getPhotos = function (callback, cursor) {
     );
 }
 
+function User(obj) {
+
+    this.id = obj.id
+    this.name = obj.name
+    this.picture = obj.picture.data.url
+
+}
 
 Album.prototype.getNextPhotos = function (callback) {
     this.getPhotos(callback, this.next_photos)
-}
-
-function log(data, type) {
-    switch (type) {
-        case 'error':
-            console.error(data);
-            break;
-        case 'info':
-            if (debug)
-                console.info(data)
-            break;
-        case 'debug':
-        default:
-            if (debug)
-                console.log(data);
-    }
 }
 
 window.fbAsyncInit = function () {
     fbapi.initialize();
     fbapi.isConnected();
     fbapi.login(function () {
-        fbapi.getPages(function () {
-            fbapi.pages[0].albums[0].getPhotos(function (){
-                fbapi.pages[0].albums[0].getNextPhotos()
+        fbapi.getUser(function () {
+            fbapi.getPages(function () {
+                fbapi.pages[0].albums[0].getPhotos(function () {
+                    fbapi.pages[0].albums[0].getNextPhotos()
+                })
             })
         })
     });
