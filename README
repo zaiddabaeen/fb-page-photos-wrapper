@@ -1,0 +1,38 @@
+/*
+ FB-Wrapper
+ ------
+ Author: Zaid Daba'een
+ 
+ Basic usage:
+ 
+ window.fbAsyncInit = function () {
+    fbwrap.initialize();
+    fbwrap.isConnected();
+    fbwrap.login();
+ }
+ 
+ Maximum usage:
+ 
+    window.fbAsyncInit = function () {
+        fbwrap.initialize();
+        fbwrap.isConnected();
+        fbwrap.login(function () {
+            fbwrap.getUser(function () {
+                fbwrap.getPages(function () {
+                    fbwrap.pages[0].albums[0].getPhotos(function () {
+                        if(fbwrap.pages[0].albums[0].hasMorePhotos()){
+                            fbwrap.pages[0].albums[0].getNextPhotos();
+                        }
+                    });
+                    if(fbwrap.hasMorePages()){
+                        fbwrap.getMorePages();
+                    }
+                });
+            });
+        });
+    };
+ 
+ Change debug variable to disable debug and info logging.
+ FBapi imports Facebook SDK, do not import it again.
+ Make sure to add an application ID to your settings.
+ */

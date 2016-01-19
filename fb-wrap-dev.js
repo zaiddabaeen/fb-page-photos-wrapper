@@ -1,31 +1,31 @@
 /*
- FBapi
+ FB-Wrapper
  ------
  Author: Zaid Daba'een
  
  Basic usage:
  
  window.fbAsyncInit = function () {
-    fbapi.initialize();
-    fbapi.isConnected();
-    fbapi.login();
+    fbwrap.initialize();
+    fbwrap.isConnected();
+    fbwrap.login();
  }
  
  Maximum usage:
  
     window.fbAsyncInit = function () {
-        fbapi.initialize();
-        fbapi.isConnected();
-        fbapi.login(function () {
-            fbapi.getUser(function () {
-                fbapi.getPages(function () {
-                    fbapi.pages[0].albums[0].getPhotos(function () {
-                        if(fbapi.pages[0].albums[0].hasMorePhotos()){
-                            fbapi.pages[0].albums[0].getNextPhotos();
+        fbwrap.initialize();
+        fbwrap.isConnected();
+        fbwrap.login(function () {
+            fbwrap.getUser(function () {
+                fbwrap.getPages(function () {
+                    fbwrap.pages[0].albums[0].getPhotos(function () {
+                        if(fbwrap.pages[0].albums[0].hasMorePhotos()){
+                            fbwrap.pages[0].albums[0].getNextPhotos();
                         }
                     });
-                    if(fbapi.hasMorePages()){
-                        fbapi.getMorePages();
+                    if(fbwrap.hasMorePages()){
+                        fbwrap.getMorePages();
                     }
                 });
             });
@@ -48,9 +48,8 @@
     fjs.parentNode.insertBefore(js, fjs);
 }(document, 'script', 'facebook-jssdk'));
 
-var debug = true;
-
-var fbapi = {
+var fbwrap = {
+    debug: true,
     isLoggedIn: false,
     userID: null,
     user: null,
@@ -67,14 +66,14 @@ var fbapi = {
     isConnected: function (callback) {
         FB.getLoginStatus(function (response) {
             if (response.status === 'connected') {
-                fbapi.log(response, 'info');
-                fbapi.log("Logged in");
-                fbapi.isLoggedIn = true;
+                fbwrap.log(response, 'info');
+                fbwrap.log("Logged in");
+                fbwrap.isLoggedIn = true;
                 return true;
             } else {
-                fbapi.log(response, 'error');
-                fbapi.log("Not logged in");
-                fbapi.isLoggedIn = false;
+                fbwrap.log(response, 'error');
+                fbwrap.log("Not logged in");
+                fbwrap.isLoggedIn = false;
                 return false;
             }
 
@@ -85,12 +84,12 @@ var fbapi = {
     login: function (callback) {
         FB.login(function (response) {
             if (response.status === 'connected') {
-                fbapi.log(response, 'info');
-                fbapi.log("Logged in successfully");
-                fbapi.userID = response.authResponse.userID;
-                fbapi.isLoggedIn = true;
+                fbwrap.log(response, 'info');
+                fbwrap.log("Logged in successfully");
+                fbwrap.userID = response.authResponse.userID;
+                fbwrap.isLoggedIn = true;
             } else {
-                fbapi.log(response, 'error');
+                fbwrap.log(response, 'error');
             }
 
             if (callback)
@@ -98,8 +97,8 @@ var fbapi = {
         }, {scope: 'manage_pages, public_profile'});
     },
     logout: function (callback) {
-        fbapi.log("Logged out");
-        fbapi.isLoggedIn = false;
+        fbwrap.log("Logged out");
+        fbwrap.isLoggedIn = false;
         FB.logout();
 
         if (callback)
@@ -110,8 +109,8 @@ var fbapi = {
                 'me?fields=picture,name',
                 'GET',
                 function (response) {
-                    fbapi.log(response, 'info');
-                    fbapi.user = new fbapi.User(response);
+                    fbwrap.log(response, 'info');
+                    fbwrap.user = new fbwrap.User(response);
 
                     if (callback)
                         callback();
@@ -128,17 +127,17 @@ var fbapi = {
                 query,
                 'GET',
                 function (response) {
-                    fbapi.log(response, 'info');
-                    fbapi.pages = [];
+                    fbwrap.log(response, 'info');
+                    fbwrap.pages = [];
 
                     for (var key in response.data) {
-                        fbapi.pages.push(new fbapi.Page(response.data[key]));
+                        fbwrap.pages.push(new fbwrap.Page(response.data[key]));
                     }
 
                     if (response.paging) {
-                        fbapi.__pages.more = fbapi.pages.length === 25;
-                        fbapi.__pages.next = response.paging.cursors.after
-                        fbapi.__pages.prev = response.paging.cursors.before
+                        fbwrap.__pages.more = fbwrap.pages.length === 25;
+                        fbwrap.__pages.next = response.paging.cursors.after
+                        fbwrap.__pages.prev = response.paging.cursors.before
                     }
 
                     if (callback)
@@ -147,13 +146,13 @@ var fbapi = {
         );
     },
     getNextPages: function (callback) {
-        fbapi.getPages(callback, fbapi.__pages.next)
+        fbwrap.getPages(callback, fbwrap.__pages.next)
     },
     hasMorePages: function (callback) {
-        return fbapi.__pages.more
+        return fbwrap.__pages.more
     },
     setPhotosLimit: function (limit) {
-        fbapi.photos_limit = limit
+        fbwrap.photos_limit = limit
     },
     log: function (data, type) {
         switch (type) {
@@ -161,23 +160,24 @@ var fbapi = {
                 console.error(data);
                 break;
             case 'info':
-                if (debug)
+                if (fbwrap.debug)
                     console.info(data)
                 break;
             case 'debug':
             default:
-                if (debug)
+                if (fbwrap.debug)
                     console.log(data);
         }
     },
     Page: function (obj) {
 
+        this.id = obj.id
         this.name = obj.name;
         this.thumb = obj.picture.data.url
         this.albums = [];
 
         for (var key in obj.albums.data) {
-            this.albums.push(new fbapi.Album(obj.albums.data[key]));
+            this.albums.push(new fbwrap.Album(obj.albums.data[key]));
         }
 
     },
@@ -206,10 +206,10 @@ var fbapi = {
     }
 };
 
-fbapi.Album.prototype.getPhotos = function (callback, cursor) {
+fbwrap.Album.prototype.getPhotos = function (callback, cursor) {
     var self = this;
 
-    var query = this.id + '/photos?fields=name,source,picture&limit=' + fbapi.photos_limit
+    var query = this.id + '/photos?fields=name,source,picture&limit=' + fbwrap.photos_limit
     if (cursor)
         query += '&after=' + cursor;
 
@@ -219,16 +219,16 @@ fbapi.Album.prototype.getPhotos = function (callback, cursor) {
                 self.photos = []
 
                 for (var key in response.data) {
-                    self.photos.push(new fbapi.Photo(response.data[key]));
+                    self.photos.push(new fbwrap.Photo(response.data[key]));
                 }
 
                 if (response.paging) {
-                    self.pagination.more = self.photos.length === fbapi.photos_limit;
+                    self.pagination.more = self.photos.length === fbwrap.photos_limit;
                     self.pagination.next = response.paging.cursors.after
                     self.pagination.previous = response.paging.cursors.before
                 }
 
-                fbapi.log(response, 'info')
+                fbwrap.log(response, 'info')
 
                 if (callback)
                     callback()
@@ -236,23 +236,23 @@ fbapi.Album.prototype.getPhotos = function (callback, cursor) {
     );
 };
 
-fbapi.Album.prototype.getNextPhotos = function (callback) {
+fbwrap.Album.prototype.getNextPhotos = function (callback) {
     this.getPhotos(callback, this.pagination.next);
 };
 
-fbapi.Album.prototype.hasMorePhotos = function () {
+fbwrap.Album.prototype.hasMorePhotos = function () {
     return this.pagination.more;
 };
 
 window.fbAsyncInit = function () {
-    fbapi.initialize();
-    fbapi.isConnected();
-    fbapi.login(function () {
-        fbapi.getUser(function () {
-            fbapi.getPages(function () {
-                fbapi.pages[0].albums[0].getPhotos(function () {
-                    if(fbapi.pages[0].albums[0].hasMorePhotos()){
-                        fbapi.pages[0].albums[0].getNextPhotos();
+    fbwrap.initialize();
+    fbwrap.isConnected();
+    fbwrap.login(function () {
+        fbwrap.getUser(function () {
+            fbwrap.getPages(function () {
+                fbwrap.pages[0].albums[0].getPhotos(function () {
+                    if(fbwrap.pages[0].albums[0].hasMorePhotos()){
+                        fbwrap.pages[0].albums[0].getNextPhotos();
                     }
                 });
             });

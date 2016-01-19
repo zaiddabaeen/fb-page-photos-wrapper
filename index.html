@@ -14,6 +14,27 @@
     </head>
 
     <body>
-        <script src="api.js"></script>
+        <script src="fb-wrap.js"></script>
+        <script>
+            window.fbAsyncInit = function () {
+                fbwrap.initialize();
+                fbwrap.isConnected();
+                fbwrap.login(function () {
+                    fbwrap.getUser(function () {
+                        fbwrap.getPages(function () {
+                            fbwrap.pages[0].albums[0].getPhotos(function () {
+                                if (fbwrap.pages[0].albums[0].hasMorePhotos()) {
+                                    fbwrap.pages[0].albums[0].getNextPhotos();
+                                }
+                            });
+                            if (fbwrap.hasMorePages()) {
+                                fbwrap.getMorePages();
+                            }
+                        });
+                    });
+                });
+            };
+        </script>
+        See the console
     </body>
 </html>
