@@ -10,6 +10,7 @@
 }(document, 'script', 'facebook-jssdk'));
 
 var fbwrap = {
+    appid: null,
     debug: true,
     isLoggedIn: false,
     userID: null,
@@ -17,9 +18,11 @@ var fbwrap = {
     pages: null,
     __pages: {next: null, prev: null, more: true}, // Holds pages related information for wrapper use
     photos_limit: 25,
-    initialize: function () {
+    initialize: function (appid) {
+        fbwrap.appid = appid;
+        
         FB.init({
-            appId: '370557326444175',
+            appId: fbwrap.appid,
             xfbml: true,
             cookie: true,
             version: 'v2.5'
